@@ -89,7 +89,27 @@ def run():
  #   print("sending mail")
   #  sendmail()
 
-if sensor() == 1:
+while (cv2.waitKey(1) & 0xFF == ord('a')):
+ if sensor() == 1:
     run()
     time.sleep(3)
     print("asd")
+
+
+    def sensor():
+        GPIO.setmode(GPIO.BCM)
+        PIR_PIN = 7
+        GPIO.setup(PIR_PIN, GPIO.IN)
+        while True:
+            if GPIO.input(PIR_PIN):
+                time.sleep(2)
+                print("Motion Detected!")
+                time.sleep(1)
+                run()
+                time.sleep(5)
+                print("sending E-mail..")
+                try:
+                    sendmail()
+                except Exception:
+                   f = open(name + ".txt", ' x')
+                   f.write(name + ".txt", 'x')
