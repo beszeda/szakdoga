@@ -12,6 +12,7 @@ from email import encoders
 
 
 def servo():
+    print("asd")
 
 def sendmail(filename):
     email_user = 'pythonalertsender@gmail.com'
@@ -80,6 +81,7 @@ def camera():
 
             while (True):
                 name2 = datetime.now().strftime("%y-%m-%d-%H-%M")
+                name = name2
                 i = i + 1
                 img, frame = vid.read()
                 font = cv2.FONT_HERSHEY_PLAIN
@@ -98,17 +100,17 @@ def camera():
                     result = cv2.VideoWriter(name2 + '.avi', fourcc, 35, (640, 480))
                     i = 0
 
-                if sensor():
-                    try:
-                        sendmail(name2)
-                    except:
-                        with open("exception.log", "a") as logfile:
-                            traceback.print_exc(file=logfile)
 
                 key = cv2.waitKey(1) & 0xFF
                 if key == ord('q'):
                     client_socket.close()
                     # result.release()
+    if sensor():
+         try:
+           sendmail(name)
+         except:
+            with open("exception.log", "a") as logfile:
+               traceback.print_exc(file=logfile)
 
 
 while True:
