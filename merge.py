@@ -10,6 +10,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
 
+#name = datetime.now().strftime("%y-%m-%d-%H-%M")
 
 def servo():
     print("asd")
@@ -49,13 +50,11 @@ def sensor():
     GPIO.setmode(GPIO.BCM)
     PIR_PIN = 7
     GPIO.setup(PIR_PIN, GPIO.IN)
-    while True:
-        if GPIO.input(PIR_PIN):
-            return True
+    return GPIO.input(PIR_PIN)
+
 
 def camera():
     name = datetime.now().strftime("%y-%m-%d-%H-%M")
-
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     host_name = socket.gethostname()
     host_ip = socket.gethostbyname(host_name)
@@ -70,7 +69,7 @@ def camera():
     server_socket.listen(5)
     print("LISTENING AT:", socket_address)
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    result = cv2.VideoWriter(name + '.avi', fourcc, 35, (640, 480))
+    result = cv2.VideoWriter( name + '.avi', fourcc, 35, (640, 480))
     # Socket Accept
     i = 0
     while True:
@@ -91,7 +90,6 @@ def camera():
                 message = struct.pack("Q", len(a)) + a
                 client_socket.sendall(message)
                 # cv2.imshow('TRANSMITTING VIDEO', frame)
-
                 result.write(frame)
                 if i == 1800:
                     #print(name)
@@ -99,21 +97,16 @@ def camera():
                     result.release()
                     result = cv2.VideoWriter(name2 + '.avi', fourcc, 35, (640, 480))
                     i = 0
+                    if sensor():
+                        try:
+                            sendmail(name)
+                        except:
+                            with open("exception.log", "a") as logfile:
+                                traceback.print_exc(file=logfile)
 
 
-                key = cv2.waitKey(1) & 0xFF
-                if key == ord('q'):
-                    client_socket.close()
-                    # result.release()
-    if sensor():
-         try:
-           sendmail(name)
-         except:
-            with open("exception.log", "a") as logfile:
-               traceback.print_exc(file=logfile)
 
+camera()
+servo()
 
-while True:
-    camera()
-    servo()
 
