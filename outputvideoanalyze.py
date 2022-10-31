@@ -1,4 +1,3 @@
-import time
 import traceback
 import cv2
 import smtplib
@@ -9,9 +8,6 @@ from email import encoders
 import glob
 import os
 import datetime
-import queue
-
-
 
 
 def oldestFile():
@@ -35,7 +31,7 @@ def rmOldFiles():
 def sendmail(filename):
     print("sending....")
     email_user = 'pythonalertsender@gmail.com'
-    email_password = 'dcktqchdwnmdugpi'
+    email_password = 'dzgwoiututrzazfq'
     email_send = 'pythonalertsender@gmail.com'
 
     subject = 'security alert'
@@ -62,7 +58,15 @@ def sendmail(filename):
     print("sent")
 
 
-def analyzevids(q):
+
+def sendemailS(q2):
+    while True:
+        path = q2.get()
+        sendmail(path)
+        print("t2: " + path)
+
+
+def analyzevids(q,q2):
     while True:
         path = q.get()
         print("t1: " + path)
@@ -101,9 +105,4 @@ def analyzevids(q):
             if key == ord('q'):
                 break
         if i == 1:
-            try:
-                sendmail(path)
-            except:
-                with open("exception.log", "a") as logfile:
-                    traceback.print_exc(file=logfile)
-            #rmOldFiles()
+            q2.put(path)

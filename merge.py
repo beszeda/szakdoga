@@ -5,9 +5,10 @@ import threading
 import queue
 
 q = queue.Queue()
+q2 = queue.Queue()
 
 def camera():
-    name = datetime.now().strftime("%y-%m-%d-%H-%M")
+    name = datetime.now().strftime("%y-%m-%d-%H-%M-%S")
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     host_name = socket.gethostname()
     #host_ip = socket.gethostbyname(host_name)
@@ -47,16 +48,19 @@ def camera():
                     result.release()
                     result = cv2.VideoWriter('C:/Users/imreb/szakdoga/videos/' + name2 + '.avi', fourcc, 35, (640, 480))
                     i = 0
-                    print("main: " + 'C:/Users/imreb/szakdoga/videos/' + name + '.avi' )
+                    print("t0: " + 'C:/Users/imreb/szakdoga/videos/' + name + '.avi' )
                     q.put('C:/Users/imreb/szakdoga/videos/' + name + '.avi')
                     name = name2
 
 
 def main():
-    thread1 = threading.Thread(target=lambda: outputvideoanalyze.analyzevids(q))
+    thread1 = threading.Thread(target=lambda: outputvideoanalyze.analyzevids(q , q2))
+    thread2 = threading.Thread(target=lambda: outputvideoanalyze.sendemailS(q2))
     thread1.start()
+    thread2.start()
     camera()
     thread1.join()
+    thread2.join()
 
 
 if __name__ == "__main__":

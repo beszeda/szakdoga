@@ -2,8 +2,7 @@ import socket, pickle, struct
 import cv2
 import os
 # create socket
-#ping = os.system("ping -4 raspberry")
-#print(ping)
+
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 host_ip = 'localhost'
 port = 9999
