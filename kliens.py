@@ -1,15 +1,18 @@
-import socket, cv2, pickle, struct
-
+import socket, pickle, struct
+import cv2
+import os
 # create socket
+#ping = os.system("ping -4 raspberry")
+#print(ping)
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-host_ip = '172.20.10.9'  # paste your server ip address here
+host_ip = 'localhost'
 port = 9999
 client_socket.connect((host_ip, port))  # a tuple
 data = b""
 payload_size = struct.calcsize("Q")
 while True:
     while len(data) < payload_size:
-        packet = client_socket.recv(4 * 1024)  # 4K
+        packet = client_socket.recv(4 * 1024)
         if not packet: break
         data += packet
     packed_msg_size = data[:payload_size]
