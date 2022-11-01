@@ -2,7 +2,6 @@
 import socket, pickle, struct
 import cv2
 
-# create socket
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 host_ip = 'localhost'
 port = 9999

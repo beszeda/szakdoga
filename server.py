@@ -1,49 +1,67 @@
-import socket, cv2, pickle, struct, imutils
+import socket, queue, threading, cv2, pickle, struct
 from datetime import datetime
-import outputvideoanalyze
-import threading
-import queue
+
 import weak_flag
+import outputvideoanalyze
 
 
-def camera(q, shouldStop):
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    host_name = socket.gethostname()
-    host_ip = socket.gethostbyname(host_name)
-    print('HOST IP:', host_ip)
-    port = 9999
-    socket_address = (host_ip, port)
-    # Socket Bind
-    server_socket.bind(socket_address)
-    # Socket Listen
-    server_socket.listen(5)
-    print("LISTENING AT:", socket_address)
-    # Socket Accept
-    client_socket, addr = server_socket.accept()
+def InitSockets(host, port):
+    endpoint = (host, port)
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind(endpoint)
+    server.listen(5)
+    print(f"LISTENING AT: {host}:{port}")
+
+    client, addr = server.accept()
     print('GOT CONNECTION FROM:', addr)
-    name = datetime.now().strftime("%y-%m-%d-%H-%M-%S")
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    result = cv2.VideoWriter('C:/Users/imreb/szakdoga/videos/' + name + '.avi', fourcc, 35, (640, 480))
-    i = 0
-    vid = cv2.VideoCapture(0)
+
+    return (server, client)
+
+
+def SendFrame(client, frame):
+    data = pickle.dumps(frame)
+    message = struct.pack("Q", len(data)) + data
+    client.sendall(message)
+
+
+def Run(host, port, savedVideos, shouldStop):
+    server, client = InitSockets(host, port)
+
+    # Init video capture
+    codec = cv2.VideoWriter_fourcc(*'XVID')
+    font = cv2.FONT_HERSHEY_PLAIN
+    cameraFeed = cv2.VideoCapture(0)
+
+    # Init current video
+    lastTime = datetime.now().strftime("%y-%m-%d-%H-%M-%S")
+    currentTime = lastTime
+    result = cv2.VideoWriter('C:/Users/imreb/szakdoga/videos/' + currentTime + '.avi', codec, 35, (640, 480))
+
+    frameCount = 0
+    frameCountToSave = 1400
 
     while not shouldStop.get():
-        name2 = datetime.now().strftime("%y-%m-%d-%H-%M-%S")
-        i = i + 1
-        img, frame = vid.read()
-        font = cv2.FONT_HERSHEY_PLAIN
-        frame = cv2.putText(frame, name2, (480, 450), font, 1, (18, 18, 18), 2, cv2.LINE_AA)
-        a = pickle.dumps(frame)
-        message = struct.pack("Q", len(a)) + a
-        client_socket.sendall(message)
+
+        # Write a single frame
+        currentTime = datetime.now().strftime("%y-%m-%d-%H-%M-%S")
+        _, frame = cameraFeed.read()
+        frame = cv2.putText(frame, currentTime, (480, 450), font, 1, (18, 18, 18), 2, cv2.LINE_AA)
         result.write(frame)
-        if i == 4200:
+        frameCount += 1
+
+        SendFrame(client, frame)
+
+        if frameCount == frameCountToSave:
             result.release()
-            result = cv2.VideoWriter('C:/Users/imreb/szakdoga/videos/' + name2 + '.avi', fourcc, 35, (640, 480))
-            i = 0
-            print("t0: " + 'C:/Users/imreb/szakdoga/videos/' + name + '.avi')
-            q.put('C:/Users/imreb/szakdoga/videos/' + name + '.avi')
-            name = name2
+            savedVideos.put('C:/Users/imreb/szakdoga/videos/' + lastTime + '.avi')
+
+            # Init next video
+            lastTime = datetime.now().strftime("%y-%m-%d-%H-%M-%S")
+            result = cv2.VideoWriter('C:/Users/imreb/szakdoga/videos/' + lastTime + '.avi', codec, 35, (640, 480))
+            frameCount = 0
+
+    client.close()
+    server.close()
 
 
 def QueryConsol(shouldStop):
@@ -55,21 +73,29 @@ def QueryConsol(shouldStop):
             pass
 
 
-def main():
-    q = queue.Queue()
-    q2 = queue.Queue()
+def Main():
+    # Inter-thread communication objects
+    savedVideos = queue.Queue()
+    videosWithMotion = queue.Queue()
     shouldStop = weak_flag.WeakFlag(False)
+
+    analyzationThread = threading.Thread(
+        target=lambda: outputvideoanalyze.analyzevids(savedVideos, videosWithMotion, shouldStop))
+    emailThread = threading.Thread(target=lambda: outputvideoanalyze.sendemailS(videosWithMotion, shouldStop))
     inputThread = threading.Thread(target=lambda: QueryConsol(shouldStop))
-    thread1 = threading.Thread(target=lambda: outputvideoanalyze.analyzevids(q, q2, shouldStop))
-    thread2 = threading.Thread(target=lambda: outputvideoanalyze.sendemailS(q2, shouldStop))
-    thread1.start()
-    thread2.start()
+
+    analyzationThread.start()
+    emailThread.start()
     inputThread.start()
-    camera(q, shouldStop)
+
+    Run("127.0.0.1", 9999, savedVideos, shouldStop)
+
     inputThread.join()
-    thread1.join()
-    thread2.join()
+    emailThread.join()
+    analyzationThread.join()
 
 
 if __name__ == "__main__":
-    main()
+    Main()
+
+
