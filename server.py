@@ -7,7 +7,6 @@ import weak_flag
 
 
 def camera(q, shouldStop):
-    name = datetime.now().strftime("%y-%m-%d-%H-%M-%S")
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     host_name = socket.gethostname()
     host_ip = socket.gethostbyname(host_name)
@@ -22,6 +21,7 @@ def camera(q, shouldStop):
     # Socket Accept
     client_socket, addr = server_socket.accept()
     print('GOT CONNECTION FROM:', addr)
+    name = datetime.now().strftime("%y-%m-%d-%H-%M-%S")
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
     result = cv2.VideoWriter('C:/Users/imreb/szakdoga/videos/' + name + '.avi', fourcc, 35, (640, 480))
     i = 0
